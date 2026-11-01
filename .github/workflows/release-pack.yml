@@ -1,0 +1,91 @@
+name: release-pack
+
+on:
+  workflow_dispatch:
+    inputs:
+      pack:
+        description: Pack id
+        required: true
+        type: choice
+        options:
+          - engine-vulkan
+          - engine-cpu
+          - engine-cuda
+          - espeak-ng
+          - stt-phonon2
+      version:
+        description: Version (blank uses the version in packs.json)
+        required: false
+        type: string
+      source_url:
+        description: HTTPS URL to the built pack zip
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    env:
+      PACK: ${{ inputs.pack }}
+      VERSION: ${{ inputs.version }}
+      SOURCE_URL: ${{ inputs.source_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check the tooling
+        shell: bash
+        run: python -m py_compile scripts/packs.py
+
+      - name: Fetch the built payload
+        shell: bash
+        run: python scripts/packs.py fetch --pack "$PACK" --url "$SOURCE_URL"
+
+      - name: Package and update the manifest
+        id: package
+        shell: bash
+        run: |
+          if [ -n "$VERSION" ]; then
+            python scripts/packs.py package --pack "$PACK" --version "$VERSION"
+          else
+            python scripts/packs.py package --pack "$PACK"
+          fi
+          python - <<'PY'
+          import json, os
+          release = json.load(open("dist/release.json", encoding="utf-8"))
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+              handle.write(f"tag={release['tag']}\n")
+              handle.write(f"asset={release['asset']}\n")
+          PY
+
+      - name: Create the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.package.outputs.tag }}" \
+            "dist/${{ steps.package.outputs.asset }}" \
+            "dist/${{ steps.package.outputs.asset }}.sha256" \
+            --title "${{ steps.package.outputs.tag }}" \
+            --notes "Aether component pack: ${{ steps.package.outputs.tag }}"
+
+      - name: Commit the updated manifest
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add checksums.json components_manifest.json
+          if git diff --cached --quiet; then
+            echo "Manifest unchanged."
+            exit 0
+          fi
+          git commit -m "packs: publish ${{ steps.package.outputs.tag }} [skip ci]"
+          git push

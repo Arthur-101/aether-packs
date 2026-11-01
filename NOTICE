@@ -1,0 +1,8 @@
+Aether Packs
+Copyright 2026 Aether Contributors
+
+The packaging scripts, catalog, and generated manifest in this repository are
+licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Downloadable packs are separate works and keep their own licences. See
+PACK_LICENSES.md before publishing an archive.
