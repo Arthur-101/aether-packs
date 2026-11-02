@@ -251,6 +251,16 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "llama-cli did not start" }
             & "$pack/bin/llama-server.exe" --help | Out-Null
             if ($LASTEXITCODE -ne 0) { throw "llama-server did not start" }
+            # The fork is what understands the ternary PQ2_0 type (ggml 142)
+            # used by the shipped Ternary-Bonsai model. An upstream build starts
+            # fine but cannot load it, so check the type table is present.
+            if ("${{ steps.plan.outputs.repo }}" -match 'PrismML') {
+              $text = [System.Text.Encoding]::ASCII.GetString(
+                [System.IO.File]::ReadAllBytes("$pack/bin/ggml-base.dll"))
+              if (-not $text.Contains("PQ2_0")) {
+                throw "ggml-base.dll has no PQ2_0 type: this engine cannot load the shipped model"
+              }
+            }
           } else {
             # espeak-ng resolves espeak-ng-data relative to its install root,
             # not the executable, so a relocated copy must be told where the
