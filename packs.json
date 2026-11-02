@@ -29,8 +29,8 @@
       "kind": "engine",
       "backend": "cpu",
       "version": "0.2.0",
-      "size": 25284320,
-      "installed_size": 63525149,
+      "size": 15549911,
+      "installed_size": 44651859,
       "min_app_version": "0.1.0",
       "recommended": false,
       "required": [

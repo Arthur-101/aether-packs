@@ -7,9 +7,9 @@
       "size": 38243563
     },
     "engine-cpu": {
-      "version": "0.1.0",
-      "sha256": "b68def839aad38600f31a08130ee86241d30c3c32a5a6de0548fd8a2093458f2",
-      "size": 25284320
+      "version": "0.2.0",
+      "sha256": "60c749c07a73c50156374fab67c821548e7a869f5e325184b2688941aa1747d3",
+      "size": 15549911
     },
     "espeak-ng": {
       "version": "1.52.0",
