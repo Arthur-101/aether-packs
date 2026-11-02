@@ -10,6 +10,11 @@
       "version": "0.1.0",
       "sha256": "b68def839aad38600f31a08130ee86241d30c3c32a5a6de0548fd8a2093458f2",
       "size": 25284320
+    },
+    "espeak-ng": {
+      "version": "1.52.0",
+      "sha256": "1bca7a8c1689d5585beddf32cc8f50848d4cf120ff9c9c6fbfa6f9f427f9513e",
+      "size": 12448941
     }
   }
 }
