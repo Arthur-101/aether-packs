@@ -2,9 +2,9 @@
   "schema": 1,
   "components": {
     "engine-vulkan": {
-      "version": "0.1.0",
-      "sha256": "ff1c15e18745a16749cb98ffd16df0cf900b10dfdf210a5aec56719edf5218f6",
-      "size": 38243563
+      "version": "0.2.0",
+      "sha256": "6ab26b2aeda9326d69a56d8842aa787af39cbb5ae338304053e545a5a5247b78",
+      "size": 29750064
     },
     "engine-cpu": {
       "version": "0.2.0",

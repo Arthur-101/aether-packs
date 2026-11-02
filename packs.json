@@ -8,8 +8,8 @@
       "kind": "engine",
       "backend": "vulkan",
       "version": "0.2.0",
-      "size": 38243563,
-      "installed_size": 105510173,
+      "size": 29750064,
+      "installed_size": 91021139,
       "min_app_version": "0.1.0",
       "recommended": true,
       "required": [
