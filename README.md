@@ -36,7 +36,7 @@ one is present.
 in version control next to its checksum:
 
 ```json
-"build": { "type": "llama.cpp", "repo": "ggml-org/llama.cpp", "ref": "b12032", "backend": "vulkan" }
+"build": { "type": "llama.cpp", "repo": "PrismML-Eng/llama.cpp", "ref": "prism-b12128-d7b2896", "backend": "vulkan" }
 "build": { "type": "msi", "url": "https://.../espeak-ng.msi", "sha256": "..." }
 "build": { "type": "manual" }
 ```
