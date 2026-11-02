@@ -1,3 +1,7 @@
 * text=auto
+# Licence files and the catalog are build inputs, so their bytes must not
+# change with the checkout platform (the zip digest depends on them).
+assets/** text eol=lf
+*.json text eol=lf
 *.zip binary
 *.sha256 text eol=lf

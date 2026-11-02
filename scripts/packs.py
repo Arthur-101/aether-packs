@@ -5,6 +5,7 @@ timestamps) so repackaging the same payload produces the same SHA-256.
 
 Usage::
 
+    py -3.12 scripts/packs.py plan --pack engine-vulkan
     py -3.12 scripts/packs.py fetch --pack engine-vulkan --url https://.../pack.zip
     py -3.12 scripts/packs.py package --pack engine-vulkan --version 0.1.0
     py -3.12 scripts/packs.py render
@@ -41,9 +42,10 @@ def _load_json(path: Path, default: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _write_json(path: Path, data: Dict[str, Any]) -> None:
-    path.write_text(
-        json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
-    )
+    # newline="\n" keeps the catalog byte-identical on Windows and Linux, so a
+    # CI commit never rewrites the whole file with CRLF.
+    with path.open("w", encoding="utf-8", newline="\n") as handle:
+        handle.write(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
 
 
 def _catalog() -> Dict[str, Any]:
@@ -214,7 +216,7 @@ def package(pack_id: str, version: str = "", source: Path | None = None) -> Dict
     digest = _sha256(archive)
     size = archive.stat().st_size
     (DIST_DIR / f"{name}.sha256").write_text(
-        f"{digest}  {name}\n", encoding="utf-8"
+        f"{digest}  {name}\n", encoding="utf-8", newline="\n"
     )
 
     checks = _load_json(CHECKSUMS_PATH, {"schema": 1, "components": {}})
@@ -258,9 +260,28 @@ def package(pack_id: str, version: str = "", source: Path | None = None) -> Dict
     return release
 
 
+def plan(pack_id: str) -> Dict[str, Any]:
+    """Returns the build plan recorded for a pack in packs.json."""
+    entry = _pack(pack_id)
+    version = str(entry.get("version") or "")
+    build = entry.get("build")
+    build = build if isinstance(build, dict) else {}
+    return {
+        "pack": pack_id,
+        "kind": entry.get("kind") or "",
+        "version": version,
+        "tag": _tag(pack_id, version) if version else "",
+        "asset": _asset(pack_id, version) if version else "",
+        "build": build,
+    }
+
+
 def main(argv: List[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
+
+    plan_parser = sub.add_parser("plan", help="print the build plan for a pack")
+    plan_parser.add_argument("--pack", required=True)
 
     fetch_parser = sub.add_parser("fetch", help="download and extract a source zip")
     fetch_parser.add_argument("--pack", required=True)
@@ -274,7 +295,9 @@ def main(argv: List[str] | None = None) -> int:
     sub.add_parser("render", help="regenerate components_manifest.json")
 
     args = parser.parse_args(argv)
-    if args.command == "fetch":
+    if args.command == "plan":
+        print(json.dumps(plan(args.pack), indent=2))
+    elif args.command == "fetch":
         target = fetch(args.pack, args.url)
         print(f"Extracted {args.pack} into {target}")
     elif args.command == "package":

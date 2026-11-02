@@ -1,0 +1,15 @@
+espeak-ng {{version}}
+
+This pack contains espeak-ng, a speech synthesizer and text-to-phoneme
+converter. It is distributed under the GNU General Public License, version 3
+or later (GPL-3.0-or-later). The full licence text is in
+LICENSE-GPL-3.0.txt in this directory.
+
+Corresponding source:
+https://github.com/espeak-ng/espeak-ng/releases/tag/{{version}}
+
+Written offer: the Aether project will provide the complete corresponding
+source for the binaries in this pack to anyone who requests it. Requests may
+be made at https://github.com/Arthur-101/aether-packs/issues. This offer is
+valid for at least three years from {{date}}, the date this pack was
+published.

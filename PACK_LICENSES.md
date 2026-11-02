@@ -6,19 +6,37 @@ records the exact terms so a published archive is always accounted for.
 
 | Pack | Licence | Source / notice |
 | :--- | :--- | :--- |
-| `engine-vulkan` | MIT (llama.cpp / ggml) | https://github.com/ggml-org/llama.cpp |
-| `engine-cpu` | MIT (llama.cpp / ggml) | https://github.com/ggml-org/llama.cpp |
-| `engine-cuda` | MIT (llama.cpp / ggml) + NVIDIA CUDA redistributable | Include the NVIDIA notice shipped with the CUDA runtime. |
-| `espeak-ng` | **GPL-3.0-or-later** | https://github.com/espeak-ng/espeak-ng — include the licence text and a written offer for the corresponding source. |
+| `engine-vulkan` | MIT (llama.cpp / ggml) + Apache-2.0 WITH LLVM-exception (LLVM OpenMP) | https://github.com/ggml-org/llama.cpp, https://github.com/llvm/llvm-project |
+| `engine-cpu` | MIT (llama.cpp / ggml) + Apache-2.0 WITH LLVM-exception (LLVM OpenMP) | Same as `engine-vulkan`. |
+| `engine-cuda` | MIT (llama.cpp / ggml) + NVIDIA CUDA redistributable | Include the NVIDIA notice shipped with the CUDA runtime. Not built yet. |
+| `espeak-ng` | **GPL-3.0-or-later** | https://github.com/espeak-ng/espeak-ng — ship the licence text and a written offer for the corresponding source. |
 | `stt-phonon2` | Runtime **Apache-2.0**; model weights **CC-BY-4.0** | See *stt-phonon2* below. |
 
-## engine-* — Prism fork
+## engine-*
 
-The Vulkan/CPU/CUDA builds are llama.cpp (MIT) with the **Prism** fork used for
-Ternary Bonsai. Record the fork's licence and commit hash in the pack release
-notes before publishing, alongside the upstream MIT text. `engine-cuda` also
+The archives contain a build of upstream llama.cpp (MIT), pinned by
+`build.repo` / `build.ref` in `packs.json` (currently `ggml-org/llama.cpp`
+`b12032`). They are not a fork.
+
+Every engine release must include:
+
+- `LICENSE-llama.cpp.txt` — the upstream MIT text, copied from
+  `assets/engines/`.
+- `bin/LICENSE-LLVM-OpenMP` — written by `GGML_OPENMP_FETCH`, which bundles
+  LLVM's `libomp.dll` (LLVM is Apache-2.0 WITH LLVM-exception).
+
+`Aether` itself is Apache-2.0 and loads these libraries as separate DLLs; the
+MIT and LLVM terms do not reach the app.
+
+`LLAMA_CONNECT` is deliberately off, so the archives do not carry
+`llama-connect.exe` (MIT, downloaded as a prebuilt binary from
+`ggml-org/llama-connect`). Aether does not use it.
+
+If a PrismML-fork engine is ever published, record the fork and commit in the
+release notes next to the upstream MIT text. `engine-cuda` additionally
 redistributes NVIDIA CUDA runtime libraries under the NVIDIA CUDA Software
-License Agreement; ship that notice with the pack.
+License Agreement; ship that notice with the pack and never the display driver,
+cuDNN, or the CUDA Toolkit.
 
 ## espeak-ng
 
@@ -26,9 +44,14 @@ GPL-3.0-or-later. It is never linked into the app: the backend spawns
 `espeak-ng.exe` as an external process, so the base application stays
 Apache-2.0. Every release for this pack must include:
 
-- the full GPL-3.0 text, and
+- the full GPL-3.0 text (`assets/espeak-ng/LICENSE-GPL-3.0.txt`), and
 - a written offer to provide the corresponding source, or a link to the exact
   espeak-ng source revision the binary was built from.
+
+The workflow generates `SOURCE_OFFER.txt` from
+`assets/espeak-ng/SOURCE_OFFER.template.txt`, substituting the pack version and
+the publication date, so the three-year offer window always starts on the day
+the archive is published.
 
 ## stt-phonon2
 

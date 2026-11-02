@@ -1,5 +1,17 @@
 name: release-pack
 
+# Builds one component pack and publishes it as a GitHub Release.
+#
+# Engine packs are compiled from the source pinned in packs.json:
+#   - clang-cl 20 with GGML_OPENMP_FETCH so ggml-cpu-*.dll link LLVM's libomp
+#   - GGML_BACKEND_DL + GGML_CPU_ALL_VARIANTS so one pack serves every x86 CPU
+#   - the same flags reproduce the 0.1.0 archives (see README "Engine build")
+#
+# espeak-ng is unpacked from the official MSI. stt-phonon2 is still built by
+# hand and uploaded through `source_url`.
+#
+# Run with dry_run to build, package, and smoke-test without publishing.
+
 on:
   workflow_dispatch:
     inputs:
@@ -10,7 +22,6 @@ on:
         options:
           - engine-vulkan
           - engine-cpu
-          - engine-cuda
           - espeak-ng
           - stt-phonon2
       version:
@@ -18,9 +29,14 @@ on:
         required: false
         type: string
       source_url:
-        description: HTTPS URL to the built pack zip
-        required: true
+        description: "stt-phonon2 only: HTTPS URL to the prebuilt pack zip"
+        required: false
         type: string
+      dry_run:
+        description: Build and smoke-test without publishing or committing
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -42,50 +58,259 @@ jobs:
           python-version: "3.12"
 
       - name: Check the tooling
-        shell: bash
+        shell: pwsh
         run: python -m py_compile scripts/packs.py
 
-      - name: Fetch the built payload
-        shell: bash
-        run: python scripts/packs.py fetch --pack "$PACK" --url "$SOURCE_URL"
-
-      - name: Package and update the manifest
-        id: package
-        shell: bash
+      - name: Resolve the build plan
+        id: plan
+        shell: pwsh
         run: |
-          if [ -n "$VERSION" ]; then
-            python scripts/packs.py package --pack "$PACK" --version "$VERSION"
-          else
-            python scripts/packs.py package --pack "$PACK"
-          fi
-          python - <<'PY'
-          import json, os
-          release = json.load(open("dist/release.json", encoding="utf-8"))
-          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
-              handle.write(f"tag={release['tag']}\n")
-              handle.write(f"asset={release['asset']}\n")
-          PY
+          $plan = python scripts/packs.py plan --pack $env:PACK | Out-String | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0) { throw "packs.py plan failed" }
+          if ($plan.build.type -eq 'disabled') {
+            throw "$env:PACK is disabled: $($plan.build.reason)"
+          }
+          $version = if ($env:VERSION) { $env:VERSION } else { $plan.version }
+          if (-not $version) { throw "$env:PACK has no version" }
+          "kind=$($plan.kind)"           >> $env:GITHUB_OUTPUT
+          "type=$($plan.build.type)"     >> $env:GITHUB_OUTPUT
+          "repo=$($plan.build.repo)"     >> $env:GITHUB_OUTPUT
+          "ref=$($plan.build.ref)"       >> $env:GITHUB_OUTPUT
+          "backend=$($plan.build.backend)" >> $env:GITHUB_OUTPUT
+          "url=$($plan.build.url)"       >> $env:GITHUB_OUTPUT
+          "sha256=$($plan.build.sha256)" >> $env:GITHUB_OUTPUT
+          "version=$version"             >> $env:GITHUB_OUTPUT
 
-      - name: Create the release
-        shell: bash
+      # --- engine packs -------------------------------------------------------
+
+      - name: Install LLVM 20 (clang-cl)
+        if: steps.plan.outputs.type == 'llama.cpp'
+        shell: pwsh
+        run: |
+          # GGML_OPENMP_FETCH pins the OpenMP runtime to 20.1.8 and refuses any
+          # other compiler major version.
+          $url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-20.1.8/LLVM-20.1.8-win64.exe"
+          $exe = "$env:RUNNER_TEMP\LLVM-20.1.8-win64.exe"
+          Invoke-WebRequest -Uri $url -OutFile $exe
+          $hash = (Get-FileHash $exe -Algorithm SHA256).Hash.ToLower()
+          if ($hash -ne "3197846a2b19063687dd56e93e34cd941e3548d907f23a6131571321bdf9fe7b") {
+            throw "LLVM installer hash mismatch: $hash"
+          }
+          Start-Process -FilePath $exe -ArgumentList "/S", "/D=C:\LLVM" -Wait
+          if (-not (Test-Path "C:\LLVM\bin\clang-cl.exe")) { throw "clang-cl was not installed" }
+          "C:\LLVM\bin" >> $env:GITHUB_PATH
+          "C:\Program Files\7-Zip" >> $env:GITHUB_PATH
+
+      - name: Set up the MSVC environment
+        if: steps.plan.outputs.type == 'llama.cpp'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Install the Vulkan SDK
+        if: steps.plan.outputs.type == 'llama.cpp' && steps.plan.outputs.backend == 'vulkan'
+        uses: jakoch/install-vulkan-sdk-action@v1
+        with:
+          install_runtime: true
+          cache: true
+
+      - name: Check out the engine source
+        if: steps.plan.outputs.type == 'llama.cpp'
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ steps.plan.outputs.repo }}
+          ref: ${{ steps.plan.outputs.ref }}
+          path: llama.cpp
+          fetch-depth: 1
+
+      - name: Configure the engine
+        if: steps.plan.outputs.type == 'llama.cpp'
+        shell: pwsh
+        run: |
+          $vulkan = if ("${{ steps.plan.outputs.backend }}" -eq "vulkan") { "ON" } else { "OFF" }
+          cmake -S llama.cpp -B build -G Ninja `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_C_COMPILER=clang-cl `
+            -DCMAKE_CXX_COMPILER=clang-cl `
+            -DBUILD_SHARED_LIBS=ON `
+            -DGGML_BACKEND_DL=ON `
+            -DGGML_CPU_ALL_VARIANTS=ON `
+            -DGGML_NATIVE=OFF `
+            -DGGML_RPC=ON `
+            -DGGML_OPENMP=ON `
+            -DGGML_OPENMP_FETCH=ON `
+            -DGGML_CCACHE=OFF `
+            "-DGGML_VULKAN=$vulkan" `
+            -DLLAMA_BUILD_TESTS=OFF `
+            -DLLAMA_BUILD_EXAMPLES=OFF `
+            -DLLAMA_BUILD_SERVER=ON
+          # LLAMA_CONNECT stays OFF: it downloads a prebuilt third-party binary
+          # at build time, changes under "latest", and Aether never runs it.
+          if ($LASTEXITCODE -ne 0) { throw "cmake configure failed" }
+
+      - name: Build the engine
+        if: steps.plan.outputs.type == 'llama.cpp'
+        shell: pwsh
+        run: |
+          cmake --build build --config Release --parallel
+          if ($LASTEXITCODE -ne 0) { throw "cmake build failed" }
+
+      - name: Stage the engine payload
+        if: steps.plan.outputs.type == 'llama.cpp'
+        shell: pwsh
+        run: |
+          $dest = "packs/$($env:PACK)/bin"
+          New-Item -ItemType Directory -Force $dest | Out-Null
+          Get-ChildItem build/bin -File |
+            Where-Object { $_.Extension -in '.exe', '.dll' -or $_.Name -like 'LICENSE-*' } |
+            Copy-Item -Destination $dest
+          Copy-Item assets/engines/LICENSE-llama.cpp.txt "packs/$($env:PACK)/LICENSE-llama.cpp.txt"
+          foreach ($file in 'llama-server.exe', 'llama-cli.exe', 'ggml.dll', 'llama-common.dll') {
+            if (-not (Test-Path "$dest/$file")) { throw "build output is missing $file" }
+          }
+          Write-Output "$((Get-ChildItem $dest -File).Count) files staged in bin/"
+
+      # --- espeak-ng ----------------------------------------------------------
+
+      - name: Unpack espeak-ng from the official MSI
+        if: steps.plan.outputs.type == 'msi'
+        shell: pwsh
+        run: |
+          $msi = "$env:RUNNER_TEMP\espeak-ng.msi"
+          Invoke-WebRequest -Uri "${{ steps.plan.outputs.url }}" -OutFile $msi
+          $hash = (Get-FileHash $msi -Algorithm SHA256).Hash.ToLower()
+          if ($hash -ne "${{ steps.plan.outputs.sha256 }}") {
+            throw "espeak-ng.msi hash mismatch: $hash"
+          }
+          # An administrative install writes the payload in one wrapper folder
+          # plus a copy of the MSI at the root. Stage the wrapper's contents so
+          # the archive has no extra top-level directory (packs.py would also
+          # flatten a single one, but the MSI copy is not a payload).
+          $stage = "$env:RUNNER_TEMP\espeak-stage"
+          Start-Process msiexec -ArgumentList "/a", "`"$msi`"", "/qn", "TARGETDIR=`"$stage`"" -Wait
+          $folders = @(Get-ChildItem $stage -Directory)
+          if ($folders.Count -ne 1) {
+            throw "unexpected MSI layout: $((Get-ChildItem $stage).Name -join ', ')"
+          }
+          $dest = "packs/$($env:PACK)"
+          New-Item -ItemType Directory -Force $dest | Out-Null
+          Get-ChildItem $folders[0].FullName | Copy-Item -Destination $dest -Recurse -Force
+          if (Get-ChildItem $dest -Recurse -File -Filter *.msi) { throw "the MSI leaked into the payload" }
+          Copy-Item assets/espeak-ng/LICENSE-GPL-3.0.txt "$dest/LICENSE-GPL-3.0.txt"
+          $offer = Get-Content assets/espeak-ng/SOURCE_OFFER.template.txt -Raw
+          $offer = $offer.Replace('{{version}}', "${{ steps.plan.outputs.version }}")
+          $offer = $offer.Replace('{{date}}', (Get-Date -Format 'yyyy-MM-dd'))
+          [System.IO.File]::WriteAllText((Join-Path $PWD "$dest/SOURCE_OFFER.txt"), $offer)
+          Write-Output "$((Get-ChildItem $dest -Recurse -File).Count) files staged"
+
+      # --- stt-phonon2 (manual build) ----------------------------------------
+
+      - name: Fetch the prebuilt STT payload
+        if: steps.plan.outputs.type == 'manual'
+        shell: pwsh
+        run: |
+          if (-not $env:SOURCE_URL) { throw "source_url is required for $env:PACK" }
+          python scripts/packs.py fetch --pack $env:PACK --url $env:SOURCE_URL
+          if ($LASTEXITCODE -ne 0) { throw "fetch failed" }
+
+      # --- package ------------------------------------------------------------
+
+      - name: Package and update the catalog
+        id: package
+        shell: pwsh
+        run: |
+          if ($env:VERSION) {
+            python scripts/packs.py package --pack $env:PACK --version $env:VERSION
+          } else {
+            python scripts/packs.py package --pack $env:PACK
+          }
+          if ($LASTEXITCODE -ne 0) { throw "packaging failed" }
+          $release = Get-Content dist/release.json -Raw | ConvertFrom-Json
+          "tag=$($release.tag)"     >> $env:GITHUB_OUTPUT
+          "asset=$($release.asset)" >> $env:GITHUB_OUTPUT
+          "sha256=$($release.sha256)" >> $env:GITHUB_OUTPUT
+
+      - name: Smoke-test the payload
+        if: steps.plan.outputs.type != 'manual'
+        shell: pwsh
+        run: |
+          $pack = "packs/$($env:PACK)"
+          if ("${{ steps.plan.outputs.kind }}" -eq "engine") {
+            & "$pack/bin/llama-cli.exe" --version
+            if ($LASTEXITCODE -ne 0) { throw "llama-cli did not start" }
+            & "$pack/bin/llama-server.exe" --help | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw "llama-server did not start" }
+          } else {
+            & "$pack/espeak-ng.exe" --version
+            if ($LASTEXITCODE -ne 0) { throw "espeak-ng did not start" }
+            $ipa = & "$pack/espeak-ng.exe" -q --ipa "hello"
+            if (-not $ipa) { throw "espeak-ng returned no phonemes" }
+            Write-Output "espeak-ng said: $ipa"
+          }
+
+      - name: Upload the pack for review
+        if: ${{ inputs.dry_run }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.package.outputs.asset }}
+          path: |
+            dist/${{ steps.package.outputs.asset }}
+            dist/${{ steps.package.outputs.asset }}.sha256
+          retention-days: 7
+
+      # --- publish ------------------------------------------------------------
+
+      - name: Refuse to reuse a tag
+        if: ${{ !inputs.dry_run }}
+        shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "${{ steps.package.outputs.tag }}" \
-            "dist/${{ steps.package.outputs.asset }}" \
-            "dist/${{ steps.package.outputs.asset }}.sha256" \
-            --title "${{ steps.package.outputs.tag }}" \
-            --notes "Aether component pack: ${{ steps.package.outputs.tag }}"
+          gh release view "${{ steps.package.outputs.tag }}" 2>$null | Out-Null
+          if ($LASTEXITCODE -eq 0) {
+            throw "${{ steps.package.outputs.tag }} already exists. Bump the version; never replace published bytes."
+          }
 
-      - name: Commit the updated manifest
-        shell: bash
+      - name: Create the release
+        if: ${{ !inputs.dry_run }}
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $source = switch ("${{ steps.plan.outputs.type }}") {
+            'llama.cpp' { "llama.cpp ${{ steps.plan.outputs.repo }}@${{ steps.plan.outputs.ref }} (${{ steps.plan.outputs.backend }})" }
+            'msi'       { "${{ steps.plan.outputs.url }}" }
+            default     { "$env:SOURCE_URL" }
+          }
+          $notes = @"
+          Aether component pack: ${{ steps.package.outputs.tag }}
+
+          Source: $source
+          SHA-256: ``${{ steps.package.outputs.sha256 }}``
+
+          Licence terms: https://github.com/Arthur-101/aether-packs/blob/main/PACK_LICENSES.md
+          "@
+          gh release create "${{ steps.package.outputs.tag }}" `
+            "dist/${{ steps.package.outputs.asset }}" `
+            "dist/${{ steps.package.outputs.asset }}.sha256" `
+            --title "${{ steps.package.outputs.tag }}" `
+            --notes $notes
+          if ($LASTEXITCODE -ne 0) { throw "release creation failed" }
+
+      - name: Commit the updated catalog
+        if: ${{ !inputs.dry_run }}
+        shell: pwsh
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add checksums.json components_manifest.json
-          if git diff --cached --quiet; then
-            echo "Manifest unchanged."
-            exit 0
-          fi
-          git commit -m "packs: publish ${{ steps.package.outputs.tag }} [skip ci]"
-          git push
+          git add packs.json checksums.json components_manifest.json
+          git diff --cached --quiet
+          if ($LASTEXITCODE -eq 1) {
+            git commit -m "packs: publish ${{ steps.package.outputs.tag }} [skip ci]"
+            git push
+            if ($LASTEXITCODE -ne 0) { throw "git push failed" }
+          } elseif ($LASTEXITCODE -eq 0) {
+            Write-Output "Catalog unchanged."
+          } else {
+            throw "git diff failed"
+          }

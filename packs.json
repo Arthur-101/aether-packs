@@ -15,6 +15,12 @@
       "required": [
         "bin/llama-server.exe"
       ],
+      "build": {
+        "type": "llama.cpp",
+        "repo": "ggml-org/llama.cpp",
+        "ref": "b12032",
+        "backend": "vulkan"
+      },
       "description": "GPU inference through Vulkan. Works on most Windows GPUs, including integrated graphics, and is the recommended default."
     },
     {
@@ -30,6 +36,12 @@
       "required": [
         "bin/llama-server.exe"
       ],
+      "build": {
+        "type": "llama.cpp",
+        "repo": "ggml-org/llama.cpp",
+        "ref": "b12032",
+        "backend": "cpu"
+      },
       "description": "CPU-only inference. A fallback for machines with no usable GPU, and the smallest engine pack."
     },
     {
@@ -45,6 +57,10 @@
       "required": [
         "bin/llama-server.exe"
       ],
+      "build": {
+        "type": "disabled",
+        "reason": "CUDA is gated on benchmarks showing Vulkan underperforms. See RELEASE_DECISIONS.md Phase 6."
+      },
       "description": "NVIDIA inference through CUDA 12.4. A large optional pack; install it only if the Vulkan engine underperforms on your GPU."
     },
     {
@@ -61,6 +77,11 @@
         "espeak-ng.exe",
         "espeak-ng-data/phontab"
       ],
+      "build": {
+        "type": "msi",
+        "url": "https://github.com/espeak-ng/espeak-ng/releases/download/1.52.0/espeak-ng.msi",
+        "sha256": "7f673c709ea5dd579d3b5ebb98688cc575328a6ab7438d2bc405b88cedaeafb9"
+      },
       "description": "Grapheme-to-phoneme data for local text-to-speech. Required by the local voice engine; licensed GPL-3.0 and shipped separately from the base app."
     },
     {
@@ -79,6 +100,9 @@
         "models/phonon2/model.fermion",
         "models/phonon2/packed_manifest.json"
       ],
+      "build": {
+        "type": "manual"
+      },
       "description": "Offline dictation: a self-contained Python runtime plus the Phonon-2 English model. Large and optional; cloud speech or no speech works without it."
     }
   ]
