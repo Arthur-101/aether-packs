@@ -241,9 +241,11 @@ jobs:
             & "$pack/bin/llama-server.exe" --help | Out-Null
             if ($LASTEXITCODE -ne 0) { throw "llama-server did not start" }
           } else {
-            & "$pack/espeak-ng.exe" --version
-            if ($LASTEXITCODE -ne 0) { throw "espeak-ng did not start" }
-            $ipa = & "$pack/espeak-ng.exe" -q --ipa "hello"
+            # espeak-ng resolves espeak-ng-data relative to its install root,
+            # not the executable, so a relocated copy must be told where the
+            # data is. The backend always passes --path for this reason, and
+            # --version alone crashes without it.
+            $ipa = & "$pack/espeak-ng.exe" -q --ipa --path "$pack/espeak-ng-data" "hello"
             if (-not $ipa) { throw "espeak-ng returned no phonemes" }
             Write-Output "espeak-ng said: $ipa"
           }
