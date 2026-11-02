@@ -37,12 +37,10 @@
         "bin/llama-server.exe"
       ],
       "build": {
-        "type": "llama.cpp",
-        "repo": "PrismML-Eng/llama.cpp",
-        "ref": "prism-b12128-d7b2896",
-        "backend": "cpu"
+        "type": "disabled",
+        "reason": "The local model never runs on the host CPU (see RELEASE_DECISIONS.md Phase 6). Published archives stay for older installs; this pack is no longer offered."
       },
-      "description": "CPU-only inference. A fallback for machines with no usable GPU, and the smallest engine pack."
+      "description": "CPU-only inference, retired: the local model never runs on the host CPU, so this engine is no longer offered. Published archives remain for older installs."
     },
     {
       "id": "engine-cuda",

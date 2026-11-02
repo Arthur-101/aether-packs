@@ -15,7 +15,7 @@ SHA-256 before installing.
 | ID | Contents | Layout inside the archive |
 | :--- | :--- | :--- |
 | `engine-vulkan` | llama.cpp Vulkan runtime | `bin/llama-server.exe` + runtime DLLs |
-| `engine-cpu` | llama.cpp CPU runtime | `bin/llama-server.exe` + runtime DLLs |
+| `engine-cpu` | llama.cpp CPU runtime (retired, not offered) | `bin/llama-server.exe` + runtime DLLs |
 | `engine-cuda` | llama.cpp CUDA 12.4 runtime (not built yet) | `bin/llama-server.exe` + CUDA DLLs |
 | `espeak-ng` | GPL-3.0 G2P tool and data | `espeak-ng.exe` + `espeak-ng-data/phontab` |
 | `stt-phonon2` | Local speech runtime and model | `bin/stt-runtime/python.exe` + `models/phonon2/` |

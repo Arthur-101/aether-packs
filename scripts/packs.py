@@ -102,8 +102,13 @@ def render_manifest() -> Path:
     components: List[Dict[str, Any]] = []
     for entry in _catalog()["components"]:
         pack_id = str(entry["id"])
+        build = entry.get("build")
+        build = build if isinstance(build, dict) else {}
+        # A disabled pack is never offered, even when an older release exists:
+        # drop its published record so it renders with an empty sha256.
+        disabled = build.get("type") == "disabled"
         record = published.get(pack_id)
-        record = record if isinstance(record, dict) else {}
+        record = record if isinstance(record, dict) and not disabled else {}
         version = str(record.get("version") or entry.get("version") or "")
         components.append(
             {

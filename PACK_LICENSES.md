@@ -7,7 +7,7 @@ records the exact terms so a published archive is always accounted for.
 | Pack | Licence | Source / notice |
 | :--- | :--- | :--- |
 | `engine-vulkan` | MIT (llama.cpp / ggml) + Apache-2.0 WITH LLVM-exception (LLVM OpenMP) | https://github.com/PrismML-Eng/llama.cpp, https://github.com/llvm/llvm-project |
-| `engine-cpu` | MIT (llama.cpp / ggml) + Apache-2.0 WITH LLVM-exception (LLVM OpenMP) | Same as `engine-vulkan`. |
+| `engine-cpu` | MIT (llama.cpp / ggml) + Apache-2.0 WITH LLVM-exception (LLVM OpenMP) | Same as `engine-vulkan`. Retired; archives stay published but the pack is no longer offered. |
 | `engine-cuda` | MIT (llama.cpp / ggml) + NVIDIA CUDA redistributable | Include the NVIDIA notice shipped with the CUDA runtime. Not built yet. |
 | `espeak-ng` | **GPL-3.0-or-later** | https://github.com/espeak-ng/espeak-ng — ship the licence text and a written offer for the corresponding source. |
 | `stt-phonon2` | Runtime **Apache-2.0**; model weights **CC-BY-4.0** | See *stt-phonon2* below. |
