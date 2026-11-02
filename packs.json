@@ -12,7 +12,9 @@
       "installed_size": 105510173,
       "min_app_version": "0.1.0",
       "recommended": true,
-      "required": ["bin/llama-server.exe"],
+      "required": [
+        "bin/llama-server.exe"
+      ],
       "description": "GPU inference through Vulkan. Works on most Windows GPUs, including integrated graphics, and is the recommended default."
     },
     {
@@ -25,7 +27,9 @@
       "installed_size": 63525149,
       "min_app_version": "0.1.0",
       "recommended": false,
-      "required": ["bin/llama-server.exe"],
+      "required": [
+        "bin/llama-server.exe"
+      ],
       "description": "CPU-only inference. A fallback for machines with no usable GPU, and the smallest engine pack."
     },
     {
@@ -38,7 +42,9 @@
       "installed_size": 1288490189,
       "min_app_version": "0.1.0",
       "recommended": false,
-      "required": ["bin/llama-server.exe"],
+      "required": [
+        "bin/llama-server.exe"
+      ],
       "description": "NVIDIA inference through CUDA 12.4. A large optional pack; install it only if the Vulkan engine underperforms on your GPU."
     },
     {
@@ -51,7 +57,10 @@
       "installed_size": 24531078,
       "min_app_version": "0.1.0",
       "recommended": false,
-      "required": ["espeak-ng.exe", "espeak-ng-data/phontab"],
+      "required": [
+        "espeak-ng.exe",
+        "espeak-ng-data/phontab"
+      ],
       "description": "Grapheme-to-phoneme data for local text-to-speech. Required by the local voice engine; licensed GPL-3.0 and shipped separately from the base app."
     },
     {
@@ -60,12 +69,17 @@
       "kind": "stt",
       "backend": "",
       "version": "0.1.0",
-      "size": 177209344,
-      "installed_size": 1177843712,
+      "size": 363312653,
+      "installed_size": 861768093,
       "min_app_version": "0.1.0",
       "recommended": false,
-      "required": ["bin/stt-runtime/Scripts/python.exe"],
-      "description": "Local speech-to-text runtime and Phonon-2 model. Optional; the base app can use cloud speech or none at all."
+      "required": [
+        "bin/stt-runtime/python.exe",
+        "models/phonon2/config.json",
+        "models/phonon2/model.fermion",
+        "models/phonon2/packed_manifest.json"
+      ],
+      "description": "Offline dictation: a self-contained Python runtime plus the Phonon-2 English model. Large and optional; cloud speech or no speech works without it."
     }
   ]
 }

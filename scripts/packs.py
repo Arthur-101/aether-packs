@@ -228,6 +228,20 @@ def package(pack_id: str, version: str = "", source: Path | None = None) -> Dict
     checks["schema"] = 1
     checks["components"] = components
     _write_json(CHECKSUMS_PATH, checks)
+
+    # Keep the catalog's sizes in sync with the bytes just packaged. A stale
+    # installed_size is what makes Settings report a download that will not fit.
+    catalog = _catalog()
+    for entry in catalog["components"]:
+        if entry.get("id") != pack_id:
+            continue
+        entry["version"] = version
+        entry["size"] = size
+        entry["installed_size"] = sum(
+            item.stat().st_size for item in payload.rglob("*") if item.is_file()
+        )
+        break
+    _write_json(CATALOG_PATH, catalog)
     render_manifest()
 
     release = {

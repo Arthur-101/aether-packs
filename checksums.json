@@ -15,6 +15,11 @@
       "version": "1.52.0",
       "sha256": "1bca7a8c1689d5585beddf32cc8f50848d4cf120ff9c9c6fbfa6f9f427f9513e",
       "size": 12448941
+    },
+    "stt-phonon2": {
+      "version": "0.1.0",
+      "sha256": "477ecc57135c552b0e9455cc6fbb29f41cc37a413aaa67d67cfec762f6881469",
+      "size": 363312653
     }
   }
 }
