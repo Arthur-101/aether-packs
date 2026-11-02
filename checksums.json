@@ -1,4 +1,15 @@
 {
   "schema": 1,
-  "components": {}
+  "components": {
+    "engine-vulkan": {
+      "version": "0.1.0",
+      "sha256": "ff1c15e18745a16749cb98ffd16df0cf900b10dfdf210a5aec56719edf5218f6",
+      "size": 38243563
+    },
+    "engine-cpu": {
+      "version": "0.1.0",
+      "sha256": "b68def839aad38600f31a08130ee86241d30c3c32a5a6de0548fd8a2093458f2",
+      "size": 25284320
+    }
+  }
 }
