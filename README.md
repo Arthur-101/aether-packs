@@ -51,12 +51,12 @@ in version control next to its checksum:
 ### Engine build
 
 The engine archives are llama.cpp with every x86 CPU backend variant, built by
-clang-cl 20:
+clang 20 (the GNU driver, targeting MSVC):
 
 ```bat
 cmake -S llama.cpp -B build -G Ninja ^
   -DCMAKE_BUILD_TYPE=Release ^
-  -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl ^
+  -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ ^
   -DBUILD_SHARED_LIBS=ON ^
   -DGGML_BACKEND_DL=ON -DGGML_CPU_ALL_VARIANTS=ON -DGGML_NATIVE=OFF ^
   -DGGML_RPC=ON -DGGML_OPENMP=ON -DGGML_OPENMP_FETCH=ON -DGGML_CCACHE=OFF ^
@@ -69,7 +69,10 @@ cmake --build build --config Release --parallel
 - `GGML_CPU_ALL_VARIANTS` + `GGML_BACKEND_DL` produce the 14
   `ggml-cpu-*.dll` variants; five of them (and therefore the `libomp` runtime)
   only exist for a non-MSVC compiler, which is why the workflow installs
-  clang-cl 20 to match the published archives.
+  clang 20 to match the published archives.
+- Use the **clang** driver, not `clang-cl`: CMake treats `clang-cl` as MSVC, so
+  it both drops those five variants and omits `-mavxvnni`, which fails the
+  alderlake build on `_mm256_dpbusd_avx_epi32`.
 - `GGML_OPENMP_FETCH` downloads LLVM's `libomp.dll` (pinned to LLVM 20.1.8) and
   its licence; both land in `bin/`.
 - `LLAMA_CONNECT` stays off. It downloads a prebuilt third-party binary at build

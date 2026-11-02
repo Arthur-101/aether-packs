@@ -3,9 +3,14 @@ name: release-pack
 # Builds one component pack and publishes it as a GitHub Release.
 #
 # Engine packs are compiled from the source pinned in packs.json:
-#   - clang-cl 20 with GGML_OPENMP_FETCH so ggml-cpu-*.dll link LLVM's libomp
+#   - clang 20 (the GNU driver, targeting MSVC) with GGML_OPENMP_FETCH so
+#     ggml-cpu-*.dll link LLVM's libomp
 #   - GGML_BACKEND_DL + GGML_CPU_ALL_VARIANTS so one pack serves every x86 CPU
 #   - the same flags reproduce the 0.1.0 archives (see README "Engine build")
+#
+# clang-cl is not usable here: CMake treats it as MSVC, so it drops the five
+# non-MSVC CPU variants and never passes -mavxvnni, which makes the alderlake
+# build fail on _mm256_dpbusd_avx_epi32.
 #
 # espeak-ng is unpacked from the official MSI. stt-phonon2 is still built by
 # hand and uploaded through `source_url`.
@@ -83,7 +88,7 @@ jobs:
 
       # --- engine packs -------------------------------------------------------
 
-      - name: Install LLVM 20 (clang-cl)
+      - name: Install LLVM 20 (clang)
         if: steps.plan.outputs.type == 'llama.cpp'
         shell: pwsh
         run: |
@@ -97,7 +102,8 @@ jobs:
             throw "LLVM installer hash mismatch: $hash"
           }
           Start-Process -FilePath $exe -ArgumentList "/S", "/D=C:\LLVM" -Wait
-          if (-not (Test-Path "C:\LLVM\bin\clang-cl.exe")) { throw "clang-cl was not installed" }
+          if (-not (Test-Path "C:\LLVM\bin\clang.exe")) { throw "clang was not installed" }
+          if (-not (Test-Path "C:\LLVM\bin\clang++.exe")) { throw "clang++ was not installed" }
           "C:\LLVM\bin" >> $env:GITHUB_PATH
           "C:\Program Files\7-Zip" >> $env:GITHUB_PATH
 
@@ -130,8 +136,8 @@ jobs:
           $vulkan = if ("${{ steps.plan.outputs.backend }}" -eq "vulkan") { "ON" } else { "OFF" }
           cmake -S llama.cpp -B build -G Ninja `
             -DCMAKE_BUILD_TYPE=Release `
-            -DCMAKE_C_COMPILER=clang-cl `
-            -DCMAKE_CXX_COMPILER=clang-cl `
+            -DCMAKE_C_COMPILER=clang `
+            -DCMAKE_CXX_COMPILER=clang++ `
             -DBUILD_SHARED_LIBS=ON `
             -DGGML_BACKEND_DL=ON `
             -DGGML_CPU_ALL_VARIANTS=ON `
