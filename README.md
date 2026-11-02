@@ -51,7 +51,10 @@ in version control next to its checksum:
 ### Engine build
 
 The engine archives are llama.cpp with every x86 CPU backend variant, built by
-clang 20 (the GNU driver, targeting MSVC):
+clang 20 (the GNU driver, targeting MSVC) from the PrismML fork
+(`PrismML-Eng/llama.cpp`, tag `prism-b12128-d7b2896`), which understands the
+ternary `PQ2_0` quantisation (ggml type 142) and MTP that the shipped
+`Ternary-Bonsai-2-9B-PQ2_0-MTP-Q8_0.gguf` uses:
 
 ```bat
 cmake -S llama.cpp -B build -G Ninja ^
@@ -62,7 +65,7 @@ cmake -S llama.cpp -B build -G Ninja ^
   -DGGML_RPC=ON -DGGML_OPENMP=ON -DGGML_OPENMP_FETCH=ON -DGGML_CCACHE=OFF ^
   -DGGML_VULKAN=ON ^
   -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=OFF ^
-  -DLLAMA_BUILD_SERVER=ON
+  -DLLAMA_BUILD_SERVER=ON -DLLAMA_BUILD_UI=OFF -DLLAMA_USE_PREBUILT_UI=OFF
 cmake --build build --config Release --parallel
 ```
 
@@ -77,6 +80,9 @@ cmake --build build --config Release --parallel
   its licence; both land in `bin/`.
 - `LLAMA_CONNECT` stays off. It downloads a prebuilt third-party binary at build
   time, resolves to "latest", and Aether never runs it.
+- `LLAMA_BUILD_UI` / `LLAMA_USE_PREBUILT_UI` stay off. Aether has its own
+  frontend, and the prebuilt UI target would fetch assets from Hugging Face
+  while building the server.
 - `bin/` is staged from `*.exe`, `*.dll`, and `LICENSE-*` only. The workflow
   adds `LICENSE-llama.cpp.txt` at the archive root.
 

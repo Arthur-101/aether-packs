@@ -7,7 +7,7 @@
       "name": "Engine · Vulkan",
       "kind": "engine",
       "backend": "vulkan",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "size": 38243563,
       "installed_size": 105510173,
       "min_app_version": "0.1.0",
@@ -17,8 +17,8 @@
       ],
       "build": {
         "type": "llama.cpp",
-        "repo": "ggml-org/llama.cpp",
-        "ref": "b12032",
+        "repo": "PrismML-Eng/llama.cpp",
+        "ref": "prism-b12128-d7b2896",
         "backend": "vulkan"
       },
       "description": "GPU inference through Vulkan. Works on most Windows GPUs, including integrated graphics, and is the recommended default."
@@ -28,7 +28,7 @@
       "name": "Engine · CPU",
       "kind": "engine",
       "backend": "cpu",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "size": 25284320,
       "installed_size": 63525149,
       "min_app_version": "0.1.0",
@@ -38,8 +38,8 @@
       ],
       "build": {
         "type": "llama.cpp",
-        "repo": "ggml-org/llama.cpp",
-        "ref": "b12032",
+        "repo": "PrismML-Eng/llama.cpp",
+        "ref": "prism-b12128-d7b2896",
         "backend": "cpu"
       },
       "description": "CPU-only inference. A fallback for machines with no usable GPU, and the smallest engine pack."

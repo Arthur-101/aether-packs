@@ -6,6 +6,7 @@ name: release-pack
 #   - clang 20 (the GNU driver, targeting MSVC) with GGML_OPENMP_FETCH so
 #     ggml-cpu-*.dll link LLVM's libomp
 #   - GGML_BACKEND_DL + GGML_CPU_ALL_VARIANTS so one pack serves every x86 CPU
+#   - the PrismML fork so the shipped ternary/MTP GGUFs (ggml type 142) load
 #   - the same flags reproduce the 0.1.0 archives (see README "Engine build")
 #
 # clang-cl is not usable here: CMake treats it as MSVC, so it drops the five
@@ -149,9 +150,13 @@ jobs:
             "-DGGML_VULKAN=$vulkan" `
             -DLLAMA_BUILD_TESTS=OFF `
             -DLLAMA_BUILD_EXAMPLES=OFF `
-            -DLLAMA_BUILD_SERVER=ON
+            -DLLAMA_BUILD_SERVER=ON `
+            -DLLAMA_BUILD_UI=OFF `
+            -DLLAMA_USE_PREBUILT_UI=OFF
           # LLAMA_CONNECT stays OFF: it downloads a prebuilt third-party binary
           # at build time, changes under "latest", and Aether never runs it.
+          # The UI is off too: Aether has its own frontend, and the prebuilt UI
+          # target would fetch assets from Hugging Face during the build.
           if ($LASTEXITCODE -ne 0) { throw "cmake configure failed" }
 
       - name: Build the engine
