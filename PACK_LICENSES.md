@@ -11,6 +11,7 @@ records the exact terms so a published archive is always accounted for.
 | `engine-cuda` | MIT (llama.cpp / ggml) + NVIDIA CUDA redistributable | Include the NVIDIA notice shipped with the CUDA runtime. Not built yet. |
 | `espeak-ng` | **GPL-3.0-or-later** | https://github.com/espeak-ng/espeak-ng — ship the licence text and a written offer for the corresponding source. |
 | `stt-phonon2` | Runtime **Apache-2.0**; model weights **CC-BY-4.0** | See *stt-phonon2* below. |
+| `ffmpeg` | **LGPL-3.0-or-later** | https://github.com/FFmpeg/FFmpeg — ship the licence text and a written offer for the corresponding source. |
 
 ## engine-*
 
@@ -90,3 +91,23 @@ both upstreams, for example:
 Include the full CC-BY-4.0 text in the archive, keep the upstream model cards,
 and link to the exact model revisions in the release notes. CC-BY-4.0 is not a
 copyleft licence and does not affect the Apache-2.0 app.
+
+## ffmpeg
+
+LGPL-3.0-or-later. It is never linked into the app: the backend spawns
+`ffmpeg.exe` and `ffprobe.exe` as external processes, so the base application
+stays Apache-2.0. Every release for this pack must include:
+
+- the full LGPL-3.0 text (`assets/ffmpeg/LICENSE-LGPL-3.0.txt`) and the GPL-3.0
+  text it incorporates by reference (`assets/ffmpeg/LICENSE-GPL-3.0.txt`),
+- FFmpeg's own licence overview (`assets/ffmpeg/LICENSE-FFmpeg.md`), and
+- a written offer to provide the corresponding source, or a link to the exact
+  FFmpeg commit the binaries were built from.
+
+The pack is a shared win64 build (`--enable-shared`), so the FFmpeg DLLs are
+separate works that a user can replace. The archive carries `BUILD_INFO.txt`
+with the exact configuration and a SHA-256 for every staged file. The workflow
+does not build this pack; the payload is staged by hand from the recorded source
+(see the README), and `SOURCE_OFFER.txt` is generated from
+`assets/ffmpeg/SOURCE_OFFER.template.txt`, substituting the pack version and the
+publication date so the three-year offer window starts on the release day.

@@ -19,6 +19,7 @@ SHA-256 before installing.
 | `engine-cuda` | llama.cpp CUDA 12.4 runtime (not built yet) | `bin/llama-server.exe` + CUDA DLLs |
 | `espeak-ng` | GPL-3.0 G2P tool and data | `espeak-ng.exe` + `espeak-ng-data/phontab` |
 | `stt-phonon2` | Local speech runtime and model | `bin/stt-runtime/python.exe` + `models/phonon2/` |
+| `ffmpeg` | LGPL-3.0 media tools | `bin/ffmpeg.exe` + `bin/ffprobe.exe` + FFmpeg DLLs |
 
 A pack is extracted by the app into:
 
@@ -45,7 +46,7 @@ in version control next to its checksum:
 | :--- | :--- |
 | `llama.cpp` | The workflow compiles that repository at `ref` for `backend`. |
 | `msi` | The workflow downloads and unpacks the pinned MSI (espeak-ng). |
-| `manual` | The workflow downloads a prebuilt zip from `source_url` (stt-phonon2). |
+| `manual` | The workflow downloads a prebuilt zip from `source_url` (stt-phonon2). `ffmpeg` is staged by hand from its pinned LGPL build and is not in the workflow's choice list. |
 | `disabled` | Dispatch is refused with the recorded `reason`. |
 
 ### Engine build
@@ -85,6 +86,22 @@ cmake --build build --config Release --parallel
   while building the server.
 - `bin/` is staged from `*.exe`, `*.dll`, and `LICENSE-*` only. The workflow
   adds `LICENSE-llama.cpp.txt` at the archive root.
+
+### FFmpeg build
+
+`ffmpeg` is not compiled here. The payload is a shared win64 LGPL build of
+FFmpeg `n7.1.3-43-g5a1f107b4c` staged into `packs/ffmpeg/bin/` together with the
+`av*`/`sw*` DLLs it links, then packaged with:
+
+```bat
+py -3.12 scripts\packs.py package --pack ffmpeg
+```
+
+The licence texts and `SOURCE_OFFER.txt` (generated from
+`assets/ffmpeg/SOURCE_OFFER.template.txt`) sit at the archive root. The pinned
+commit, build configuration, and per-file hashes are recorded in `BUILD_INFO.txt`
+and `PACK_LICENSES.md`. To rebuild, stage a new shared LGPL build, update the
+commit and hashes, and publish a new version; never replace an existing tag.
 
 ## Publishing a pack
 

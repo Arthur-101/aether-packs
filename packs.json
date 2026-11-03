@@ -102,6 +102,27 @@
         "type": "manual"
       },
       "description": "Offline dictation: a self-contained Python runtime plus the Phonon-2 English model. Large and optional; cloud speech or no speech works without it."
+    },
+    {
+      "id": "ffmpeg",
+      "name": "Media · FFmpeg",
+      "kind": "media",
+      "backend": "",
+      "version": "7.1.3",
+      "size": 52395827,
+      "installed_size": 123734616,
+      "min_app_version": "0.1.0",
+      "recommended": false,
+      "required": [
+        "bin/ffmpeg.exe",
+        "bin/ffprobe.exe"
+      ],
+      "build": {
+        "type": "manual",
+        "source": "FFmpeg n7.1.3-43-g5a1f107b4c (shared win64 LGPL build)",
+        "url": "https://github.com/FFmpeg/FFmpeg/tree/5a1f107b4c78318f318897900acad1b6c6aa3f9d"
+      },
+      "description": "Video and audio compression, probing, and format conversion. Optional: media tools fall back to a system FFmpeg when this pack is not installed."
     }
   ]
 }
